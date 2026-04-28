@@ -12,6 +12,7 @@ import (
 	et "github.com/openshift-eng/openshift-tests-extension/pkg/extension/extensiontests"
 	g "github.com/openshift-eng/openshift-tests-extension/pkg/ginkgo"
 
+	exutil "github.com/openshift/origin/test/extended/util"
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 
@@ -41,8 +42,8 @@ func main() {
 		panic(fmt.Sprintf("couldn't build extension test specs from ginkgo: %+v", err.Error()))
 	}
 
-	// OTE clears ginkgo BeforeSuite nodes, so framework init must use AddBeforeAll
 	specs.AddBeforeAll(func() {
+		exutil.WithCleanup(func() {})
 		if err := compat_otp.InitTest(false); err != nil {
 			panic(fmt.Sprintf("failed to initialize test framework: %v", err))
 		}
