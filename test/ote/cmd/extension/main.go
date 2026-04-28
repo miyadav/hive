@@ -36,7 +36,7 @@ func main() {
 		Parents: []string{"openshift/conformance/parallel"},
 	})
 
-	specs, err := g.BuildExtensionTestSpecsFromOpenShiftGinkgoSuite()
+	specs, err := g.BuildExtensionTestSpecsFromOpenShiftGinkgoSuite(hiveTestsOnly())
 	if err != nil {
 		panic(fmt.Sprintf("couldn't build extension test specs from ginkgo: %+v", err.Error()))
 	}
@@ -62,6 +62,17 @@ func main() {
 
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
+	}
+}
+
+func hiveTestsOnly() et.SelectFunction {
+	return func(spec *et.ExtensionTestSpec) bool {
+		for _, cl := range spec.CodeLocations {
+			if strings.Contains(cl, "github.com/openshift/hive") {
+				return true
+			}
+		}
+		return false
 	}
 }
 
