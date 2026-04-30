@@ -77,13 +77,37 @@ func main() {
 	}
 }
 
+// testPlatform returns the platform derived from the test's source file.
+// Tests with explicit platform tags in their name (e.g. [Hive/GCP])
+// override the file-based platform.
+func testPlatform(spec *et.ExtensionTestSpec) string {
+	if strings.Contains(spec.Name, "[Hive/GCP]") {
+		return "gcp"
+	}
+	for _, cl := range spec.CodeLocations {
+		for file, platform := range platformFileSelectors {
+			if strings.Contains(cl, file) {
+				return platform
+			}
+		}
+	}
+	return ""
+}
+
 func hiveTestsOnly() et.SelectFunction {
 	skipLongRunning := os.Getenv("SKIP_LONG_RUNNING_TESTS") == "true"
+	targetPlatform := os.Getenv("PLATFORM")
 	return func(spec *et.ExtensionTestSpec) bool {
 		for _, cl := range spec.CodeLocations {
 			if strings.Contains(cl, "github.com/openshift/hive") {
 				if skipLongRunning && isLongRunningTest(spec.Name) {
 					return false
+				}
+				if targetPlatform != "" {
+					p := testPlatform(spec)
+					if p != "" && p != targetPlatform {
+						return false
+					}
 				}
 				return true
 			}
@@ -103,20 +127,9 @@ func isLongRunningTest(name string) bool {
 
 func applyEnvironmentSelectors(specs et.ExtensionTestSpecs) {
 	specs.Walk(func(spec *et.ExtensionTestSpec) {
-		// Handle tests with explicit platform tags in their name that
-		// override the file-based selector (e.g. GCP test in hive_aws.go)
-		if strings.Contains(spec.Name, "[Hive/GCP]") {
-			spec.Include(et.PlatformEquals("gcp"))
-			return
-		}
-
-		for _, cl := range spec.CodeLocations {
-			for file, platform := range platformFileSelectors {
-				if strings.Contains(cl, file) {
-					spec.Include(et.PlatformEquals(platform))
-					return
-				}
-			}
+		p := testPlatform(spec)
+		if p != "" {
+			spec.Include(et.PlatformEquals(p))
 		}
 	})
 }
