@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -19,6 +20,14 @@ import (
 	// Import test packages to register Ginkgo tests
 	_ "github.com/openshift/hive/test/ote/hive"
 )
+
+func init() {
+	// The OpenShift Ginkgo fork (TRT-2539) introduced ForwardingOutputInterceptor
+	// which dups fd 1 and forwards all captured output back to stdout. This breaks
+	// OTE's subprocess JSON protocol — non-JSON text appears before the result,
+	// causing json.Unmarshal to fail with "Deserializaion Error".
+	flag.Set("ginkgo.output-interceptor-mode", "none")
+}
 
 var platformFileSelectors = map[string]string{
 	"hive_aws.go":     "aws",
