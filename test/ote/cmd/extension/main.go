@@ -72,6 +72,10 @@ func main() {
 
 	applyEnvironmentSelectors(specs)
 
+	specs.Walk(func(spec *et.ExtensionTestSpec) {
+		spec.Lifecycle = et.LifecycleInforming
+	})
+
 	ext.AddSpecs(specs)
 	registry.Register(ext)
 
