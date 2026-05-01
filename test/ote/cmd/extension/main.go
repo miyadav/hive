@@ -113,6 +113,9 @@ func hiveTestsOnly() et.SelectFunction {
 	return func(spec *et.ExtensionTestSpec) bool {
 		for _, cl := range spec.CodeLocations {
 			if strings.Contains(cl, "github.com/openshift/hive") {
+				if strings.Contains(spec.Name, "Longduration") {
+					return false
+				}
 				if skipLongRunning && isLongRunningTest(spec.Name) {
 					return false
 				}
