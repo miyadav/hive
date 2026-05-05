@@ -55,6 +55,17 @@ func main() {
 	ext.AddSuite(e.Suite{
 		Name:    "openshift/hive",
 		Parents: []string{"openshift/conformance/parallel"},
+		Qualifiers: []string{
+			`!labels.exists(l, l=="Longduration")`,
+		},
+	})
+
+	ext.AddSuite(e.Suite{
+		Name:    "openshift/hive/serial",
+		Parents: []string{"openshift/conformance/parallel"},
+		Qualifiers: []string{
+			`labels.exists(l, l=="Longduration")`,
+		},
 	})
 
 	specs, err := g.BuildExtensionTestSpecsFromOpenShiftGinkgoSuite(hiveTestsOnly())
@@ -73,6 +84,9 @@ func main() {
 	applyEnvironmentSelectors(specs)
 
 	specs.Walk(func(spec *et.ExtensionTestSpec) {
+		if strings.Contains(spec.Name, "Longduration") {
+			spec.Labels.Insert("Longduration")
+		}
 		spec.Lifecycle = et.LifecycleInforming
 	})
 
@@ -113,9 +127,6 @@ func hiveTestsOnly() et.SelectFunction {
 	return func(spec *et.ExtensionTestSpec) bool {
 		for _, cl := range spec.CodeLocations {
 			if strings.Contains(cl, "github.com/openshift/hive") {
-				if strings.Contains(spec.Name, "Longduration") {
-					return false
-				}
 				if skipLongRunning && isLongRunningTest(spec.Name) {
 					return false
 				}
