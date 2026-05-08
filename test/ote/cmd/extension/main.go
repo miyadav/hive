@@ -36,17 +36,6 @@ var platformFileSelectors = map[string]string{
 	"hive_vsphere.go": "vsphere",
 }
 
-// longRunningTestIDs contains case IDs of tests that provision real clusters
-// and take 30-60+ minutes each. These are skipped when SKIP_LONG_RUNNING_TESTS=true.
-var longRunningTestIDs = []string{
-	"22379", "22381", "23040", "23167", "23986", "24088", "25145", "25210",
-	"25310", "25443", "25447", "27559", "28845", "28867", "32026", "32135",
-	"32223", "33642", "33832", "33854", "33872", "34148", "35069", "35297",
-	"40825", "41212", "41499", "41777", "43100", "44475", "44946", "46016",
-	"49471", "52411", "52415", "54463", "63275", "63862", "68240", "68294",
-	"75241", "78024", "79046",
-}
-
 func main() {
 	registry := e.NewRegistry()
 
@@ -54,18 +43,7 @@ func main() {
 
 	ext.AddSuite(e.Suite{
 		Name:    "openshift/hive",
-		Parents: []string{"openshift/conformance/parallel"},
-		Qualifiers: []string{
-			`!labels.exists(l, l=="Longduration")`,
-		},
-	})
-
-	ext.AddSuite(e.Suite{
-		Name:    "openshift/hive/serial",
-		Parents: []string{"openshift/conformance/parallel"},
-		Qualifiers: []string{
-			`labels.exists(l, l=="Longduration")`,
-		},
+		Parents: []string{"openshift/conformance/serial"},
 	})
 
 	specs, err := g.BuildExtensionTestSpecsFromOpenShiftGinkgoSuite(hiveTestsOnly())
@@ -122,14 +100,10 @@ func testPlatform(spec *et.ExtensionTestSpec) string {
 }
 
 func hiveTestsOnly() et.SelectFunction {
-	skipLongRunning := os.Getenv("SKIP_LONG_RUNNING_TESTS") == "true"
 	targetPlatform := os.Getenv("PLATFORM")
 	return func(spec *et.ExtensionTestSpec) bool {
 		for _, cl := range spec.CodeLocations {
 			if strings.Contains(cl, "github.com/openshift/hive") {
-				if skipLongRunning && isLongRunningTest(spec.Name) {
-					return false
-				}
 				if targetPlatform != "" {
 					p := testPlatform(spec)
 					if p != "" && p != targetPlatform {
@@ -141,15 +115,6 @@ func hiveTestsOnly() et.SelectFunction {
 		}
 		return false
 	}
-}
-
-func isLongRunningTest(name string) bool {
-	for _, id := range longRunningTestIDs {
-		if strings.Contains(name, "-"+id+"-") || strings.HasSuffix(name, "-"+id) {
-			return true
-		}
-	}
-	return false
 }
 
 func applyEnvironmentSelectors(specs et.ExtensionTestSpecs) {
