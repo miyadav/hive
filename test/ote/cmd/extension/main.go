@@ -102,18 +102,16 @@ func testPlatform(spec *et.ExtensionTestSpec) string {
 func hiveTestsOnly() et.SelectFunction {
 	targetPlatform := os.Getenv("PLATFORM")
 	return func(spec *et.ExtensionTestSpec) bool {
-		for _, cl := range spec.CodeLocations {
-			if strings.Contains(cl, "github.com/openshift/hive") {
-				if targetPlatform != "" {
-					p := testPlatform(spec)
-					if p != "" && p != targetPlatform {
-						return false
-					}
-				}
-				return true
+		if !strings.Contains(spec.Name, "[sig-hive]") {
+			return false
+		}
+		if targetPlatform != "" {
+			p := testPlatform(spec)
+			if p != "" && p != targetPlatform {
+				return false
 			}
 		}
-		return false
+		return true
 	}
 }
 
