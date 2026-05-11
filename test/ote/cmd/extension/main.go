@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -42,11 +43,14 @@ func main() {
 	ext := e.NewExtension("openshift", "optional", "hive")
 
 	ext.AddSuite(e.Suite{
-		Name:    "openshift/hive",
-		Parents: []string{"openshift/conformance/serial"},
+		Name: "openshift/hive",
 	})
 
-	specs, err := g.BuildExtensionTestSpecsFromOpenShiftGinkgoSuite(hiveTestsOnly())
+	selectFns := []et.SelectFunction{hiveTestsOnly()}
+	if shard := shardTests(); shard != nil {
+		selectFns = append(selectFns, shard)
+	}
+	specs, err := g.BuildExtensionTestSpecsFromOpenShiftGinkgoSuite(selectFns...)
 	if err != nil {
 		panic(fmt.Sprintf("couldn't build extension test specs from ginkgo: %+v", err.Error()))
 	}
@@ -122,4 +126,26 @@ func applyEnvironmentSelectors(specs et.ExtensionTestSpecs) {
 			spec.Include(et.PlatformEquals(p))
 		}
 	})
+}
+
+func shardTests() et.SelectFunction {
+	indexStr := os.Getenv("TEST_SHARD_INDEX")
+	totalStr := os.Getenv("TEST_TOTAL_SHARDS")
+	if indexStr == "" || totalStr == "" {
+		return nil
+	}
+	index, err := strconv.Atoi(indexStr)
+	if err != nil {
+		return nil
+	}
+	total, err := strconv.Atoi(totalStr)
+	if err != nil || total <= 0 {
+		return nil
+	}
+	position := 0
+	return func(spec *et.ExtensionTestSpec) bool {
+		mine := position%total == index
+		position++
+		return mine
+	}
 }
