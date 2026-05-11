@@ -50,6 +50,9 @@ func main() {
 	if shard := shardTests(); shard != nil {
 		selectFns = append(selectFns, shard)
 	}
+	if limit := limitTests(); limit != nil {
+		selectFns = append(selectFns, limit)
+	}
 	specs, err := g.BuildExtensionTestSpecsFromOpenShiftGinkgoSuite(selectFns...)
 	if err != nil {
 		panic(fmt.Sprintf("couldn't build extension test specs from ginkgo: %+v", err.Error()))
@@ -126,6 +129,25 @@ func applyEnvironmentSelectors(specs et.ExtensionTestSpecs) {
 			spec.Include(et.PlatformEquals(p))
 		}
 	})
+}
+
+func limitTests() et.SelectFunction {
+	limitStr := os.Getenv("TEST_LIMIT")
+	if limitStr == "" {
+		return nil
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		return nil
+	}
+	count := 0
+	return func(spec *et.ExtensionTestSpec) bool {
+		if count >= limit {
+			return false
+		}
+		count++
+		return true
+	}
 }
 
 func shardTests() et.SelectFunction {
