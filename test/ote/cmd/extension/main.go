@@ -46,6 +46,11 @@ func main() {
 		Name: "openshift/hive",
 	})
 
+	ext.AddSuite(e.Suite{
+		Name:       "openshift/hive/sdrosa",
+		Qualifiers: []string{`name.contains("HiveSDRosa")`},
+	})
+
 	selectFns := []et.SelectFunction{hiveTestsOnly()}
 	if shard := shardTests(); shard != nil {
 		selectFns = append(selectFns, shard)
